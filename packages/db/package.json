@@ -5,9 +5,15 @@
         "@prisma/client": "^5.11.0"
     },
     "devDependencies": {
-        "prisma": "5.11.0"
+        "@types/node": "^25.6.0",
+        "prisma": "5.11.0",
+        "ts-node": "^10.9.2",
+        "typescript": "^6.0.3"
     },
     "exports": {
         "./client": "./index.ts"
+    },
+    "prisma": {
+        "seed": "ts-node prisma/seed.ts"
     }
 }
