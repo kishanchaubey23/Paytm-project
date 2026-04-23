@@ -41,7 +41,7 @@ export async function p2pTransfer(to: string, amount: number) {
       create: {
         userId: toUser.id,
         amount: amount,
-        locked: 0,
+        locked: 0, 
       },
     });
     await tx.p2pTransfer.create({
