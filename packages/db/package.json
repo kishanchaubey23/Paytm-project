@@ -6,6 +6,7 @@
     "@prisma/client": "^5.11.0"
   },
   "scripts": {
+    "prisma:generate": "prisma generate",
     "generate": "prisma generate",
     "postinstall": "prisma generate"
   },
