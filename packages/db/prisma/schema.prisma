@@ -17,7 +17,6 @@ model User {
   Balance           Balance[]
   sentTransfers     p2pTransfer[]       @relation(name: "FromUserRelation")
   receivedTransfers p2pTransfer[]       @relation(name: "ToUserRelation")
-
 }
 
 model Merchant {
@@ -36,6 +35,7 @@ model p2pTransfer {
   toUserId   Int
   toUser     User         @relation(name: "ToUserRelation", fields: [toUserId], references: [id])
 }
+
 model OnRampTransaction {
   id        Int          @id @default(autoincrement())
   status    OnRampStatus
@@ -54,7 +54,6 @@ model Balance {
   locked Int
   user   User @relation(fields: [userId], references: [id])
 }
-
 
 enum AuthType {
   Google
