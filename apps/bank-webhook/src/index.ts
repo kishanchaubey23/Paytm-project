@@ -3,6 +3,12 @@ import db from "@repo/db/client"
 import {z} from "zod";
 const app=express();
 app.use(express.json())
+
+app.get("/",(req,res)=>{
+    res.json({
+        status:"Bank Webhook is running"
+    })
+})
 app.post("/hdfcWebhook",async(req,res)=>{
     // const paymentSchema=z.object({
     //     token:z.string(),

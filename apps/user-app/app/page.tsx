@@ -10,6 +10,6 @@ export default async function Page() {
     redirect("/dashboard")
   }
   else{
-    redirect("/api/auth/sigin")
+    redirect("/api/auth/signin")
   }
 }
