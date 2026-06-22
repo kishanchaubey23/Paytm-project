@@ -8,15 +8,16 @@ datasource db {
 }
 
 model User {
-  id                Int                 @id @default(autoincrement())
-  email             String?             @unique
-  name              String?
-  number            String              @unique
-  password          String
-  OnRampTransaction OnRampTransaction[]
-  Balance           Balance[]
-  sentTransfers     p2pTransfer[]       @relation(name: "FromUserRelation")
-  receivedTransfers p2pTransfer[]       @relation(name: "ToUserRelation")
+  id                  Int                  @id @default(autoincrement())
+  email               String?              @unique
+  name                String?
+  number              String?              @unique
+  password            String?
+  OnRampTransaction   OnRampTransaction[]
+  Balance             Balance[]
+  sentTransfers       p2pTransfer[]        @relation(name: "FromUserRelation")
+  receivedTransfers   p2pTransfer[]        @relation(name: "ToUserRelation")
+  passwordResetTokens PasswordResetToken[]
 }
 
 model Merchant {
@@ -64,4 +65,21 @@ enum OnRampStatus {
   Success
   Failure
   Processing
+}
+
+model Otp {
+  id        Int      @id @default(autoincrement())
+  target    String
+  code      String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
+
+model PasswordResetToken {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
 }

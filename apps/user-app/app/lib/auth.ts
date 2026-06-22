@@ -7,59 +7,133 @@ export const authOptions = {
       CredentialsProvider({
           name: 'Credentials',
           credentials: {
-            phone: { label: "Phone number", type: "text", placeholder: "1231231231", required: true },
-            password: { label: "Password", type: "password", required: true }
+            phone: { label: "Phone or Email", type: "text", placeholder: "user@example.com / 1234567890" },
+            password: { label: "Password", type: "password" },
+            otp: { label: "OTP", type: "text" },
+            loginType: { label: "Login Type", type: "text" }
           },
-          // TODO: User credentials type from next-aut
           async authorize(credentials: any) {
-            // Do zod validation, OTP validation here
-            const hashedPassword = await bcrypt.hash(credentials.password, 10);
+            if (!credentials || !credentials.phone) {
+              return null;
+            }
+
+            const identifier = credentials.phone;
+
+            // OTP validation flow
+            if (credentials.loginType === "otp") {
+              if (!credentials.otp) return null;
+
+              // Check if correct, unexpired OTP exists
+              const validOtp = await db.otp.findFirst({
+                where: {
+                  target: identifier,
+                  code: credentials.otp,
+                  expiresAt: {
+                    gt: new Date()
+                  }
+                },
+                orderBy: {
+                  createdAt: 'desc'
+                }
+              });
+
+              if (!validOtp) {
+                return null;
+              }
+
+              // Delete the verified OTP code to prevent reuse
+              await db.otp.delete({
+                where: { id: validOtp.id }
+              });
+
+              // Check if user already exists
+              let user = await db.user.findFirst({
+                where: {
+                  OR: [
+                    { email: identifier },
+                    { number: identifier }
+                  ]
+                }
+              });
+
+              // If user does not exist, perform automatic signup!
+              if (!user) {
+                const isEmail = identifier.includes('@');
+                try {
+                  user = await db.user.create({
+                    data: {
+                      email: isEmail ? identifier : null,
+                      number: !isEmail ? identifier : null,
+                      name: isEmail ? identifier.split('@')[0] : `user_${identifier}`,
+                      password: "", // passwordless user has empty password initially
+                      Balance: {
+                        create: {
+                          amount: 0,
+                          locked: 0
+                        }
+                      }
+                    }
+                  });
+                } catch (e) {
+                  console.error("Automatic signup failed during OTP login:", e);
+                  return null;
+                }
+              }
+
+              return {
+                id: user.id.toString(),
+                name: user.name,
+                email: user.email,
+                number: user.number
+              };
+            }
+
+            // Password validation flow
             const existingUser = await db.user.findFirst({
                 where: {
-                    number: credentials.phone
+                    OR: [
+                      { email: identifier },
+                      { number: identifier }
+                    ]
                 }
             });
 
-            if (existingUser) {
+            if (existingUser && existingUser.password) {
                 const passwordValidation = await bcrypt.compare(credentials.password, existingUser.password);
                 if (passwordValidation) {
                     return {
                         id: existingUser.id.toString(),
                         name: existingUser.name,
-                        email: existingUser.number
+                        email: existingUser.email,
+                        number: existingUser.number
                     }
                 }
-                return null;
             }
 
-            try {
-                const user = await db.user.create({
-                    data: {
-                        number: credentials.phone,
-                        password: hashedPassword
-                    }
-                });
-            
-                return {
-                    id: user.id.toString(),
-                    name: user.name,
-                    email: user.number
-                }
-            } catch(e) {
-                console.error(e);
-            }
-
-            return null
+            return null;
           },
         })
     ],
     secret: process.env.JWT_SECRET || "secret",
+    pages: {
+        signIn: "/signin",
+    },
     callbacks: {
-        // TODO: can u fix the type here? Using any is bad
+        async jwt({ token, user }: any) {
+            if (user) {
+                token.id = user.id;
+                token.number = user.number;
+                token.email = user.email;
+            }
+            return token;
+        },
         async session({ token, session }: any) {
-            session.user.id = token.sub
-
-            return session
+            if (session.user) {
+                session.user.id = token.id;
+                session.user.number = token.number;
+                session.user.email = token.email;
+            }
+            return session;
         }
     }
   }
